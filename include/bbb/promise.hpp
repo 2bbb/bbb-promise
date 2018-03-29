@@ -41,6 +41,7 @@ namespace bbb {
 					std::exception_ptr err_ptr = std::current_exception();
 					d.reject(err_ptr);
 				}
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 				delete this; 
 			} else {
 				thread = std::move(std::thread([=](defer d) {
@@ -50,6 +51,7 @@ namespace bbb {
 						std::exception_ptr err_ptr = std::current_exception();
 						d.reject(err_ptr);
 					}
+					std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 					delete this; 
 				}, std::move(d)));
 				thread.detach();
@@ -453,7 +455,7 @@ namespace bbb {
 	};
 	
 	template <typename result_type>
-	static promise<result_type> &reject(const std::exception_ptr &err) {
+	static promise<result_type> &reject(std::exception_ptr err) {
 		return *(new promise<result_type>(
 			[=, &err](typename promise<result_type>::defer d) {
 				try {
@@ -465,6 +467,20 @@ namespace bbb {
 			}
 		));
 	};
+	
+	template <typename type>
+	static type await(promise<type> &pr) {
+		std::promise<type> p;
+		std::future<type> v = p.get_future();
+		pr.then(
+			[&p](type result){
+				p.set_value(result);
+			}, [&p](std::exception_ptr err_ptr) {
+				p.set_exception(err_ptr);
+			}
+		);
+		return v.get();
+	}
 };
 
 #endif /* bbb_promise_hpp */
