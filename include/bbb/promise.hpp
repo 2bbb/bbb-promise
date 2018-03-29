@@ -29,29 +29,29 @@ namespace bbb {
 			std::promise<uint8_t> promise;
 		};
 		
-		promise(std::function<void(defer)> callback, bool sync = false)
+		promise(std::function<void(defer &)> callback, bool sync = false)
 		: callback(callback)
 		, d()
 		, future(new std::future<std::uint8_t>(d.promise.get_future()))
 		{
 			if(sync) {
 				try {
-					callback(std::move(d));
+					callback(d);
 				} catch(...) {
 					std::exception_ptr err_ptr = std::current_exception();
 					d.reject(err_ptr);
 				}
-				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				delete this; 
 			} else {
 				thread = std::move(std::thread([=](defer d) {
 					try {
-						callback(std::move(d));
+						callback(d);
 					} catch(...) {
 						std::exception_ptr err_ptr = std::current_exception();
 						d.reject(err_ptr);
 					}
-					std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 					delete this; 
 				}, std::move(d)));
 				thread.detach();
@@ -60,7 +60,9 @@ namespace bbb {
 		
 		promise(promise &&) = default;
 		
-		virtual ~promise() { std::cout << "destruct " << typeid(decltype(*this)).name() << std::endl; };
+		virtual ~promise() {
+//			std::cout << "destruct " << typeid(decltype(*this)).name() << std::endl;
+		};
 	private:
 		template <typename new_result_type>
 		auto then_impl(std::function<new_result_type()> callback)
@@ -69,7 +71,7 @@ namespace bbb {
 			using new_promise = promise<new_result_type>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						d.resolve(callback());
@@ -85,7 +87,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						callback();
@@ -108,7 +110,7 @@ namespace bbb {
 			using new_promise = promise<new_result_type>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, err_callback, future](typename new_promise::defer d) {
+				[callback, err_callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						d.resolve(callback());
@@ -132,7 +134,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, err_callback, future](typename new_promise::defer d) {
+				[callback, err_callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						callback();
@@ -155,7 +157,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						d.resolve();
@@ -173,7 +175,7 @@ namespace bbb {
 			));
 		}
 		
-		std::function<void(defer)> callback;
+		std::function<void(defer &)> callback;
 		defer d;
 		std::shared_ptr<std::future<uint8_t>> future;
 		std::thread thread;
@@ -212,6 +214,19 @@ namespace bbb {
 		{
 			return except_impl(function_traits<function_type>::cast(callback));
 		};
+		
+		void await() {
+			std::promise<uint8_t> p;
+			std::future<uint8_t> v = p.get_future();
+			
+			then([&p](){
+				p.set_value(0);
+			}, [&p](std::exception_ptr err_ptr) {
+				p.set_exception(err_ptr);
+			});
+			v.get();
+			return;
+		}
 	};
 
 	template <typename result_type>
@@ -226,27 +241,29 @@ namespace bbb {
 			std::promise<result_type> promise;
 		};
 		
-		promise(std::function<void(defer)> callback, bool sync = false)
+		promise(std::function<void(defer &)> callback, bool sync = false)
 		: callback(callback)
 		, d()
 		, future(new std::future<result_type>(d.promise.get_future()))
 		{
 			if(sync) {
 				try {
-					callback(std::move(d));
+					callback(d);
 				} catch(...) {
 					std::exception_ptr err_ptr = std::current_exception();
 					d.reject(err_ptr);
 				}
-				delete this; 
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				delete this;
 			} else {
 				thread = std::move(std::thread([=](defer d) {
 					try {
-						callback(std::move(d));
+						callback(d);
 					} catch(...) {
 						std::exception_ptr err_ptr = std::current_exception();
 						d.reject(err_ptr);
 					}
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
 					delete this;
 				}, std::move(d)));
 				thread.detach();
@@ -255,7 +272,9 @@ namespace bbb {
 		
 		promise(promise &&) = default;
 		
-		virtual ~promise() { std::cout << "destruct " << typeid(decltype(*this)).name() << std::endl; };
+		virtual ~promise() {
+//			std::cout << "destruct " << typeid(decltype(*this)).name() << std::endl;
+		};
 
 	private:
 		template <typename new_result_type>
@@ -265,7 +284,7 @@ namespace bbb {
 			using new_promise = promise<new_result_type>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						d.resolve(callback(future->get()));
 					} catch(...) {
@@ -280,7 +299,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						callback(future->get());
 						d.resolve();
@@ -302,7 +321,7 @@ namespace bbb {
 			using new_promise = promise<new_result_type>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, err_callback, future](typename new_promise::defer d) {
+				[callback, err_callback, future](typename new_promise::defer &d) {
 					try {
 						d.resolve(callback(future->get()));
 					} catch(...) {
@@ -325,7 +344,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, err_callback, future](typename new_promise::defer d) {
+				[callback, err_callback, future](typename new_promise::defer &d) {
 					try {
 						callback(future->get());
 						d.resolve();
@@ -349,7 +368,7 @@ namespace bbb {
 			using new_promise = promise<result_type>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						d.resolve(future->get());
 					} catch(...) {
@@ -369,7 +388,7 @@ namespace bbb {
 			using new_promise = promise<void>;
 			auto future = this->future;
 			return *(new new_promise(
-				[callback, future](typename new_promise::defer d) {
+				[callback, future](typename new_promise::defer &d) {
 					try {
 						future->get();
 						d.resolve();
@@ -387,7 +406,7 @@ namespace bbb {
 			));
 		}
 
-		std::function<void(defer)> callback;
+		std::function<void(defer &)> callback;
 		defer d;
 		std::shared_ptr<std::future<result_type>> future;
 		std::thread thread;
@@ -429,12 +448,24 @@ namespace bbb {
 		{
 			return except_impl(function_traits<function_type>::cast(callback));
 		};
+		
+		result_type await() {
+			std::promise<result_type> p;
+			std::future<result_type> v = p.get_future();
+			
+			then([&p](result_type result){
+				p.set_value(result);
+			}, [&p](std::exception_ptr err_ptr) {
+				p.set_exception(err_ptr);
+			});
+			return v.get();
+		}
 	};
 
 	template <typename result_type>
 	static promise<result_type> &resolve(result_type arg) {
 		return *(new promise<result_type>(
-			[=](typename promise<result_type>::defer d) {
+			[=](typename promise<result_type>::defer &d) {
 				d.resolve(arg);
 			}
 		));
@@ -443,7 +474,7 @@ namespace bbb {
 	template <typename result_type>
 	static promise<result_type> &reject(std::exception &err) {
 		return *(new promise<result_type>(
-			[=, &err](typename promise<result_type>::defer d) {
+			[=, &err](typename promise<result_type>::defer &d) {
 				try {
 					throw err;
 				} catch (...) {
@@ -457,7 +488,7 @@ namespace bbb {
 	template <typename result_type>
 	static promise<result_type> &reject(std::exception_ptr err) {
 		return *(new promise<result_type>(
-			[=, &err](typename promise<result_type>::defer d) {
+			[=, &err](typename promise<result_type>::defer &d) {
 				try {
 					std::rethrow_exception(err);
 				} catch (...) {
