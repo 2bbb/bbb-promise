@@ -13,15 +13,15 @@
 ## ex.
 
 ```cpp
-bbb::resolve(4)
-    .then([](int data) {
+bbb::create_promise([] { return 4; }) // == bbb::resolve(4)
+    ->then([](int data) {
         std::this_thread::sleep_for(std::chrono::millisecond(5000));
         std::cout << data << std::endl;
 	})
-    .then([] {
+    ->then([] {
         std::cout << "finish" << std::endl;
     })
-    .catch([](std::exception_ptr err_ptr) {
+    ->catch([](std::exception_ptr err_ptr) {
         try {
 	        std::rethrow_error(err_ptr);
         } catch(std::exception &err) {
