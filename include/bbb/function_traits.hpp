@@ -28,6 +28,21 @@ namespace bbb {
 			using type = decltype(check<patient>(nullptr));
 			static constexpr bool value = type::value;
 		};
+		template <typename res, typename ... args>
+		struct has_call_operator<res(args ...)> {
+			using type = std::true_type;
+			static constexpr bool value = type::value;
+		};
+		template <typename res, typename ... args>
+		struct has_call_operator<res(*)(args ...)> {
+			using type = std::true_type;
+			static constexpr bool value = type::value;
+		};
+		template <typename res, typename ... args>
+		struct has_call_operator<res(&)(args ...)> {
+			using type = std::true_type;
+			static constexpr bool value = type::value;
+		};
 		
 		namespace detail {
 			template <typename ret, typename ... arguments>
@@ -63,6 +78,9 @@ namespace bbb {
 		
 		template <typename ret, typename ... arguments>
 		struct function_traits<ret(arguments ...)>
+		: detail::function_traits<ret, arguments ...> {};
+		template <typename ret, typename ... arguments>
+		struct function_traits<ret(&)(arguments ...)>
 		: detail::function_traits<ret, arguments ...> {};
 		
 		template <typename ret, typename ... arguments>

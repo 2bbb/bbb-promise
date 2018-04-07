@@ -1,6 +1,3 @@
-#include <iostream>
-#include <typeinfo>
-
 #include <bbb/promise.hpp>
 
 struct exception : std::exception {
@@ -10,14 +7,14 @@ struct exception : std::exception {
 };
 
 int main(int argc, char *argv[]) {
-	auto &promise = bbb::resolve(4)
-		.then([](int x) {
+	auto promise = bbb::resolve(4) // 1
+		->then([](int x) { // 2
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			std::cout << "1st " << x << std::endl;
 			throw 1;
 			return x * 2;
 		})
-		.then(
+		->then( // 3
 			[](int x) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 				std::cout << "2nd " << x << std::endl;
@@ -35,13 +32,13 @@ int main(int argc, char *argv[]) {
 				return 3;
 			}
 		)
-		.then([](int x) {
+		->then([](int x) { // 4
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			std::cout << "3rd " << x << std::endl;
 //			throw exception("C");
 			return x;
 		})
-		.except([](std::exception_ptr ptr) {
+		->except([](std::exception_ptr ptr) { // 5
 			if(!ptr) return 0;
 			std::cout << "except" << std::endl;
 			try {
@@ -54,7 +51,7 @@ int main(int argc, char *argv[]) {
 				return x;
 			}
 		});
-	auto result = bbb::await(promise);
+	auto result = bbb::await(promise); // 6
 	std::cout << "await: " << result << std::endl;
 	return 0;
 }
