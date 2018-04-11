@@ -18,7 +18,10 @@ int main(int argc, char *argv[]) {
 				std::cout << "1st" << std::endl;
 				return x;
 			}),
-		bbb::create_promise([] { return 2; })
+		bbb::create_promise([] {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			return 2;
+		})
 			->then([](int x) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				std::cout << "2nd" << std::endl;
@@ -38,5 +41,6 @@ int main(int argc, char *argv[]) {
 	
 	bbb::await(all_result);
 	
+//	all_result->clear();
 	return 0;
 }
