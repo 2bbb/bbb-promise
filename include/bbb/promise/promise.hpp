@@ -37,7 +37,7 @@ namespace bbb {
 					std::exception_ptr err_ptr = std::current_exception();
 					d.reject(err_ptr);
 				}
-				remove_parent(parent);
+				finish_process();
 			} else {
 				thread = std::move(std::thread([=](defer d) {
 					try {
@@ -46,7 +46,7 @@ namespace bbb {
 						std::exception_ptr err_ptr = std::current_exception();
 						d.reject(err_ptr);
 					}
-					remove_parent(parent);
+					finish_process();
 				}, std::move(d)));
 				thread.detach();
 			}

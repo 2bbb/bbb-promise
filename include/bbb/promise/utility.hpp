@@ -67,10 +67,8 @@ namespace bbb {
 			}
 		);
 		auto &&res = v.get();
-		then->manager->clear();
 		then->parent.reset();
 		then->self.reset();
-		then->manager.reset();
 		return std::move(res);
 	}
 		
@@ -84,10 +82,8 @@ namespace bbb {
 				p.set_exception(err_ptr);
 			}
 		);
-		then->manager->clear();
 		then->parent.reset();
 		then->self.reset();
-		then->manager.reset();
 	}
 		
 	namespace promise_detail {

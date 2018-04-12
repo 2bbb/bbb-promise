@@ -20,13 +20,6 @@ namespace bbb {
 	struct unwrap_promise_ref<std::shared_ptr<bbb::promise<value_type>>> {
 		using type = value_type;
 	};
-
-	template <typename promise_ref>
-	inline static promise_ref init_promise(promise_ref p) {
-		p->manager = std::make_shared<std::list<base_promise_ref>>();
-		p->manager->push_back(p);
-		return p;
-	}
 };
 
 #endif

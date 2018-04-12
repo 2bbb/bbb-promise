@@ -13,31 +13,29 @@ namespace bbb {
 		using ref = std::shared_ptr<base_promise>;
 		base_promise::ref parent;
 		base_promise::ref self;
-		std::shared_ptr<std::list<ref>> manager;
 		
 		template <typename promise_ref>
 		promise_ref setup_promise(promise_ref p) {
 			p->parent = shared_from_this();
 			p->self = p;
-			p->manager = manager;
-			p->manager->push_back(p);
 			return p;
 		}
-		void remove_parent(ref parent) {
+		void finish_process() {
 			if(parent) {
-				auto it = std::remove_if(manager->begin(), manager->end(), [parent](base_promise::ref v) {
-					return v.get() == parent.get();
-				});
-				manager->erase(it, manager->end());
-				parent->manager.reset();
 				parent->suicide();
 				parent.reset();
 			}
+			self.reset();
 		}
 		void suicide() {
 			self.reset();
 		}
 	};
+	
+	template <typename promise_ref>
+	inline static promise_ref init_promise(promise_ref p) {
+		return p;
+	}
 };
 
 #endif
